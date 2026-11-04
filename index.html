@@ -1,1 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Variedades Rosita 2.0 | Pruebas Gratis</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f6efff;color:#29213b}
+main{max-width:700px;margin:auto;padding:22px 15px}
+header{text-align:center;padding:25px 10px}
+.logo{display:inline-block;background:linear-gradient(135deg,#ec4899,#7c3aed);color:white;padding:22px;border-radius:20px;font-size:28px;font-weight:bold}
+h1{font-size:30px;margin:14px 0 8px}
+.sub{color:#6b6478;line-height:1.5}
+.card{background:white;border-radius:18px;padding:22px;margin:18px 0;box-shadow:0 5px 20px #38205b12}
+h2{margin-top:0}
+label{display:block;font-weight:bold;margin:15px 0 7px}
+input,select{width:100%;padding:14px;border:1px solid #d8d0e2;border-radius:10px;font-size:16px}
+button{width:100%;padding:14px;border:0;border-radius:10px;background:#7c3aed;color:white;font-weight:bold;font-size:16px;margin-top:16px}
+button:disabled{opacity:.6}
+.msg{margin-top:14px;padding:12px;border-radius:10px;display:none;line-height:1.5}
+.ok{display:block;background:#dcfce7;color:#166534}
+.err{display:block;background:#ffe4e6;color:#9f1239}
+.small{text-align:center;color:#716b7d;font-size:13px}
+a{color:#7c3aed}
+.hidden{display:none}
+.item{padding:14px;border:1px solid #e5dcec;border-radius:12px;margin:12px 0;font-size:14px}
+.row{display:flex;gap:8px}
+.row button{flex:1}
+.secondary{background:#e9e2f2;color:#35234c}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div class="logo">VR 2.0</div>
+<h1>Variedades Rosita 2.0</h1>
+<p class="sub">¡Solicita tu prueba gratis de 24 horas!</p>
+</header>
 
+<section class="card">
+<h2>Solicitar prueba gratis</h2>
+<p class="sub">Completa tus datos. Tu solicitud será revisada antes de ser aprobada.</p>
+
+<form id="requestForm">
+<label>Tu nombre</label>
+<input id="name" maxlength="80" required placeholder="Escribe tu nombre">
+
+<label>Tu WhatsApp</label>
+<input id="phone" required maxlength="20" inputmode="tel" placeholder="Ejemplo: 70000000">
+
+<label>Selecciona tu servicio</label>
+<select id="service" required>
+<option value="">Seleccionar servicio</option>
+<option>Netflix</option>
+<option>Disney Plus</option>
+<option>Amazon Prime</option>
+<option>HBO Max</option>
+<option>Vix Plus</option>
+<option>Paramount Plus</option>
+<option>Spotify</option>
+<option>Crunchyroll</option>
+</select>
+
+<button id="send" type="submit">Enviar solicitud</button>
+<div id="formMsg" class="msg"></div>
+</form>
+</section>
+
+<section class="card">
+<h2>Servicios disponibles</h2>
+<p>🎬 Netflix · Disney Plus · Amazon Prime · HBO Max</p>
+<p>📺 Vix Plus · Paramount Plus · Spotify · Crunchyroll</p>
+</section>
+
+<p class="small">
+Atención Variedades Rosita 2.0<br>
+WhatsApp: 6825-5929
+</p>
+
+<p class="small"><a href="#" id="adminLink">Acceso privado de administrador</a></p>
+
+<section class="card hidden" id="admin">
+<h2>Panel de administrador</h2>
+<form id="loginForm">
+<label>Correo</label>
+<input id="email" type="email" value="variedadesr70@gmail.com" required>
+<label>Contraseña</label>
+<input id="password" type="password" required placeholder="Tu contraseña de administrador">
+<button id="loginBtn">Iniciar sesión</button>
+<div id="loginMsg" class="msg"></div>
+</form>
+
+<div id="panel" class="hidden">
+<button type="button" id="refresh">Actualizar solicitudes</button>
+<div id="requests"></div>
+<button type="button" class="secondary" id="logout">Cerrar sesión</button>
+</div>
+</section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const client = window.supabase.createClient(
+'https://crfqbxyazfdyorhofvob.supabase.co',
+'sb_publishable_KEPa3kY5UDZS1eenbHb0Ig_h_Eu1gSI'
+);
+
+const el = id => document.getElementById(id);
+
+function message(id,text,success=false){
+ const box=el(id);
+ box.textContent=text;
+ box.className='msg '+(success?'ok':'err');
+}
+
+el('requestForm').addEventListener('submit',async e=>{
+ e.preventDefault();
+ const btn=el('send');
+ btn.disabled=true;
+ btn.textContent='Enviando...';
+
+ const name=el('name').value.trim();
+ const phone=el('phone').value.replace(/\D/g,'');
+ const service=el('service').value;
+
+ if(phone.length<8){
+  message('formMsg','Escribe un número de WhatsApp válido.');
+  btn.disabled=false;
+  btn.textContent='Enviar solicitud';
+  return;
+ }
+
+ const {error}=await client.from('trial_requests').insert({
+  customer_name:name,
+  whatsapp:phone,
+  service:service
+ });
+
+ if(error){
+  if(error.code==='23505'){
+   message('formMsg','Este número ya realizó una solicitud. Escríbenos al 6825-5929 si necesitas ayuda.');
+  }else{
+   message('formMsg','No se pudo enviar. Revisa tu conexión e inténtalo nuevamente.');
+  }
+ }else{
+  message('formMsg','¡Solicitud recibida! Está pendiente de aprobación. Te contactaremos por WhatsApp.',true);
+  el('requestForm').reset();
+ }
+
+ btn.disabled=false;
+ btn.textContent='Enviar solicitud';
+});
+
+el('adminLink').onclick=e=>{
+ e.preventDefault();
+ el('admin').classList.toggle('hidden');
+};
+
+el('loginForm').addEventListener('submit',async e=>{
+ e.preventDefault();
+ el('loginBtn').disabled=true;
+
+ const {error}=await client.auth.signInWithPassword({
+  email:el('email').value.trim(),
+  password:el('password').value
+ });
+
+ el('loginBtn').disabled=false;
+
+ if(error){
+  message('loginMsg','No se pudo iniciar sesión. Revisa tus datos.');
+  return;
+ }
+
+ el('loginForm').classList.add('hidden');
+ el('panel').classList.remove('hidden');
+ cargarSolicitudes();
+});
+
+async function cargarSolicitudes(){
+ const list=el('requests');
+ list.textContent='Cargando solicitudes...';
+
+ const {data,error}=await client
+  .from('trial_requests')
+  .select('*')
+  .order('requested_at',{ascending:false});
+
+ if(error){
+  list.textContent='Error al consultar solicitudes. Revisa los permisos de Supabase.';
+  return;
+ }
+
+ list.innerHTML='';
+
+ if(!data.length){
+  list.textContent='Todavía no hay solicitudes.';
+  return;
+ }
+
+ data.forEach(r=>{
+  const item=document.createElement('div');
+  item.className='item';
+
+  const title=document.createElement('strong');
+  title.textContent=r.customer_name+' — '+r.service;
+
+  const details=document.createElement('p');
+  details.textContent='WhatsApp: '+r.whatsapp+' | Estado: '+r.status;
+
+  const date=document.createElement('p');
+  date.textContent='Solicitud: '+new Date(r.requested_at).toLocaleString('es-SV');
+
+  item.append(title,details,date);
+
+  if(r.expires_at){
+   const expiry=document.createElement('p');
+   expiry.textContent='Vencimiento: '+new Date(r.expires_at).toLocaleString('es-SV');
+   item.append(expiry);
+  }
+
+  if(r.status==='pending'){
+   const approve=document.createElement('button');
+   approve.textContent='Aprobar solicitud';
+
+   approve.onclick=async()=>{
+    const credentials=prompt('Introduce los datos de acceso para el cliente:');
+    if(!credentials)return;
+
+    const now=new Date();
+    const expires=new Date(now.getTime()+24*60*60*1000);
+
+    const {error}=await client.from('trial_requests').update({
+     status:'approved',
+     credentials:credentials,
+     approved_at:now.toISOString(),
+     expires_at:expires.toISOString()
+    }).eq('id',r.id);
+
+    if(error){
+     alert('No se pudo aprobar la solicitud.');
+     return;
+    }
+
+    const phone=r.whatsapp.replace(/\D/g,'');
+    const fullPhone=phone.startsWith('503')?phone:'503'+phone;
+    const text='Hola '+r.customer_name+'. Tu prueba de '+r.service+' por 24 horas ha sido aprobada. Datos de acceso: '+credentials;
+
+    window.open('https://wa.me/'+fullPhone+'?text='+encodeURIComponent(text),'_blank');
+    cargarSolicitudes();
+   };
+
+   const reject=document.createElement('button');
+   reject.textContent='Rechazar';
+   reject.className='secondary';
+
+   reject.onclick=async()=>{
+    if(!confirm('¿Deseas rechazar esta solicitud?'))return;
+    const {error}=await client.from('trial_requests').update({
+     status:'rejected'
+    }).eq('id',r.id);
+    if(error)alert('No se pudo rechazar.');
+    else cargarSolicitudes();
+   };
+
+   const actions=document.createElement('div');
+   actions.className='row';
+   actions.append(approve,reject);
+   item.append(actions);
+  }
+
+  list.append(item);
+ });
+}
+
+el('refresh').onclick=cargarSolicitudes;
+
+el('logout').onclick=async()=>{
+ await client.auth.signOut();
+ el('panel').classList.add('hidden');
+ el('loginForm').classList.remove('hidden');
+ el('password').value='';
+};
+
+</script>
+</body>
+  </html>
