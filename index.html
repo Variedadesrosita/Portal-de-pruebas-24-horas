@@ -225,43 +225,57 @@ async function cargarSolicitudes(){
    approve.textContent='Aprobar solicitud';
 
    approve.onclick=async()=>{
+approve.onclick=async()=>{
     const credentials=prompt('Introduce los datos de acceso para el cliente:');
     if(!credentials)return;
 
-    const now=new Date();
-    const expires=new Date(now.getTime()+24*60*60*1000);
+    try{
+     const {data:userData,error:userError}=await client.auth.getUser();
 
-    const {error}=await client.from('trial_requests').update({
-     status:'approved',
-     credentials:credentials,
-     approved_at:now.toISOString(),
-     expires_at:expires.toISOString()
-    }).eq('id',r.id);
+     if(userError || !userData.user){
+      alert('Tu sesión de administrador no está activa. Cierra sesión e ingresa nuevamente.');
+      return;
+     }
 
-    if(error){
-     alert('No se pudo aprobar la solicitud.');
-     return;
+     if(userData.user.email!=='variedadesr70@gmail.com'){
+      alert('La sesión no corresponde al correo autorizado para administrar solicitudes.');
+      return;
+     }
+
+     const now=new Date();
+     const expires=new Date(now.getTime()+24*60*60*1000);
+
+     const {data,error}=await client.from('trial_requests').update({
+      status:'approved',
+      credentials:credentials,
+      approved_at:now.toISOString(),
+      expires_at:expires.toISOString()
+     }).eq('id',r.id).select('id,status').maybeSingle();
+
+     if(error){
+      alert('Error de Supabase: '+error.message);
+      return;
+     }
+
+     if(!data){
+      alert('No se actualizó la solicitud. Verifica los permisos de administrador y que siga pendiente.');
+      return;
+     }
+
+     const phone=r.whatsapp.replace(/\D/g,'');
+     const fullPhone=phone.startsWith('503')?phone:'503'+phone;
+     const message='Hola '+r.customer_name+'. Tu prueba de '+r.service+' por 24 horas ha sido aprobada. Datos de acceso: '+credentials;
+     const waUrl='https://wa.me/'+fullPhone+'?text='+encodeURIComponent(message);
+
+     alert('¡Solicitud aprobada correctamente! Ahora se abrirá WhatsApp.');
+     window.open(waUrl,'_blank');
+
+     cargarSolicitudes();
+
+    }catch(err){
+     alert('Ocurrió un error: '+err.message);
+     console.error(err);
     }
-
-    const phone=r.whatsapp.replace(/\D/g,'');
-    const fullPhone=phone.startsWith('503')?phone:'503'+phone;
-    const text='Hola '+r.customer_name+'. Tu prueba de '+r.service+' por 24 horas ha sido aprobada. Datos de acceso: '+credentials;
-
-    window.open('https://wa.me/'+fullPhone+'?text='+encodeURIComponent(text),'_blank');
-    cargarSolicitudes();
-   };
-
-   const reject=document.createElement('button');
-   reject.textContent='Rechazar';
-   reject.className='secondary';
-
-   reject.onclick=async()=>{
-    if(!confirm('¿Deseas rechazar esta solicitud?'))return;
-    const {error}=await client.from('trial_requests').update({
-     status:'rejected'
-    }).eq('id',r.id);
-    if(error)alert('No se pudo rechazar.');
-    else cargarSolicitudes();
    };
 
    const actions=document.createElement('div');
