@@ -141,8 +141,7 @@ el('requestForm').addEventListener('submit',async e=>{
   if(error.code==='23505'){
    message('formMsg','Este número ya realizó una solicitud. Escríbenos al 6825-5929 si necesitas ayuda.');
   }else{
-   message('formMsg','No se pudo enviar. Revisa tu conexión e inténtalo nuevamente.');
-  }
+   message('formMsg','Error de Supabase: '+error.message+' | Código: '+error.code);
  }else{
   message('formMsg','¡Solicitud recibida! Está pendiente de aprobación. Te contactaremos por WhatsApp.',true);
   el('requestForm').reset();
