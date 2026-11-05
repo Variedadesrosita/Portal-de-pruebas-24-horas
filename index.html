@@ -167,10 +167,7 @@ el('loginForm').addEventListener('submit',async e=>{
  });
 
  el('loginBtn').disabled=false;
-
- if(error){
-  message('loginMsg','No se pudo iniciar sesión. Revisa tus datos.');
-  return;
+message('formMsg','Error: '+error.message+' | Código: '+error.code);
  }
 
  el('loginForm').classList.add('hidden');
